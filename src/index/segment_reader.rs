@@ -41,6 +41,7 @@ pub struct SegmentReader {
     termdict_composite: CompositeFile,
     postings_composite: CompositeFile,
     positions_composite: CompositeFile,
+    vectors_composite: CompositeFile,
     fast_fields_readers: FastFieldReaders,
     fieldnorm_readers: FieldNormReaders,
 
@@ -167,6 +168,13 @@ impl SegmentReader {
             }
         };
 
+        let vectors_composite =
+            if let Ok(vectors_file) = segment.open_read(SegmentComponent::Vectors) {
+                CompositeFile::open(&vectors_file)?
+            } else {
+                CompositeFile::empty()
+            };
+
         let schema = segment.schema();
 
         let fast_fields_data = segment.open_read(SegmentComponent::FastFields)?;
@@ -196,6 +204,7 @@ impl SegmentReader {
             max_doc,
             termdict_composite,
             postings_composite,
+            vectors_composite,
             fast_fields_readers,
             fieldnorm_readers,
             segment_id: segment.id(),
@@ -460,6 +469,7 @@ impl SegmentReader {
             self.positions_composite.space_usage(self.schema()),
             self.fast_fields_readers.space_usage()?,
             self.fieldnorm_readers.space_usage(self.schema()),
+            self.vectors_composite.space_usage(self.schema()),
             self.get_store_reader(0)?.space_usage(),
             self.alive_bitset_opt
                 .as_ref()

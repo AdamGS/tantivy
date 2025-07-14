@@ -12,6 +12,7 @@ use super::ip_options::IpAddrOptions;
 use super::IntoIpv6Addr;
 use crate::schema::bytes_options::BytesOptions;
 use crate::schema::facet_options::FacetOptions;
+use crate::schema::vector_options::{self, VectorOptions};
 use crate::schema::{
     DateOptions, Facet, IndexRecordOption, JsonObjectOptions, NumericOptions, OwnedValue,
     TextFieldIndexing, TextOptions,
@@ -71,6 +72,8 @@ pub enum Type {
     Json = b'j',
     /// IpAddr
     IpAddr = b'p',
+    /// Vector
+    Vector = b'v',
 }
 
 impl From<ColumnType> for Type {
@@ -84,6 +87,7 @@ impl From<ColumnType> for Type {
             ColumnType::DateTime => Type::Date,
             ColumnType::Bytes => Type::Bytes,
             ColumnType::IpAddr => Type::IpAddr,
+            ColumnType::Vector => Type::Vector,
         }
     }
 }
@@ -139,6 +143,7 @@ impl Type {
             Type::Bytes => "Bytes",
             Type::Json => "Json",
             Type::IpAddr => "IpAddr",
+            Type::Vector => "Vector",
         }
     }
 
@@ -189,6 +194,8 @@ pub enum FieldType {
     JsonObject(JsonObjectOptions),
     /// IpAddr field
     IpAddr(IpAddrOptions),
+    /// Vector field
+    Vector(VectorOptions),
 }
 
 impl FieldType {
@@ -205,6 +212,7 @@ impl FieldType {
             FieldType::Bytes(_) => Type::Bytes,
             FieldType::JsonObject(_) => Type::Json,
             FieldType::IpAddr(_) => Type::IpAddr,
+            FieldType::Vector(_) => Type::Vector,
         }
     }
 
@@ -233,6 +241,11 @@ impl FieldType {
         matches!(self, FieldType::Date(_))
     }
 
+    /// returns true if this is a vector field
+    pub fn is_vector(&self) -> bool {
+        matches!(self, FieldType::Vector(_))
+    }
+
     /// returns true if the field is indexed.
     pub fn is_indexed(&self) -> bool {
         match *self {
@@ -246,6 +259,7 @@ impl FieldType {
             FieldType::Bytes(ref bytes_options) => bytes_options.is_indexed(),
             FieldType::JsonObject(ref json_object_options) => json_object_options.is_indexed(),
             FieldType::IpAddr(ref ip_addr_options) => ip_addr_options.is_indexed(),
+            FieldType::Vector(ref vector_options) => vector_options.is_indexed(),
         }
     }
 
@@ -283,6 +297,7 @@ impl FieldType {
             FieldType::IpAddr(ref ip_addr_options) => ip_addr_options.is_fast(),
             FieldType::Facet(_) => true,
             FieldType::JsonObject(ref json_object_options) => json_object_options.is_fast(),
+            FieldType::Vector(ref vector_options) => vector_options.is_fast(),
         }
     }
 
@@ -302,6 +317,7 @@ impl FieldType {
             FieldType::Bytes(ref bytes_options) => bytes_options.fieldnorms(),
             FieldType::JsonObject(ref _json_object_options) => false,
             FieldType::IpAddr(ref ip_addr_options) => ip_addr_options.fieldnorms(),
+            FieldType::Vector(_) => false,
         }
     }
 
@@ -348,6 +364,13 @@ impl FieldType {
                 .map(TextFieldIndexing::index_option),
             FieldType::IpAddr(ref ip_addr_options) => {
                 if ip_addr_options.is_indexed() {
+                    Some(IndexRecordOption::Basic)
+                } else {
+                    None
+                }
+            }
+            FieldType::Vector(ref vector_options) => {
+                if vector_options.is_indexed() {
                     Some(IndexRecordOption::Basic)
                 } else {
                     None
@@ -454,6 +477,7 @@ impl FieldType {
 
                         Ok(OwnedValue::IpAddr(ip_addr.into_ipv6_addr()))
                     }
+                    FieldType::Vector(vector_options) => todo!(),
                 }
             }
             JsonValue::Number(field_val_num) => match self {
@@ -513,6 +537,7 @@ impl FieldType {
                     expected: "a string with an ip addr",
                     json: JsonValue::Number(field_val_num),
                 }),
+                FieldType::Vector(vector_options) => todo!(),
             },
             JsonValue::Object(json_map) => match self {
                 FieldType::Str(_) => {

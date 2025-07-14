@@ -69,5 +69,8 @@ fn posting_writer_from_field_entry(field_entry: &FieldEntry) -> Box<dyn Postings
                 JsonPostingsWriter::<DocIdRecorder>::default().into()
             }
         }
+        FieldType::Vector(ref _options) => {
+            SpecializedPostingsWriter::<DocIdRecorder>::default().into()
+        }
     }
 }

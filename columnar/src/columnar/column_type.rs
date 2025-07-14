@@ -20,6 +20,7 @@ pub enum ColumnType {
     Bool = 5u8,
     IpAddr = 6u8,
     DateTime = 7u8,
+    Vector = 8u8,
 }
 
 impl fmt::Display for ColumnType {
@@ -33,13 +34,14 @@ impl fmt::Display for ColumnType {
             ColumnType::Bool => "bool",
             ColumnType::IpAddr => "ip",
             ColumnType::DateTime => "datetime",
+            ColumnType::Vector => "vector",
         };
         write!(f, "{short_str}")
     }
 }
 
 // The order needs to match _exactly_ the order in the enum
-const COLUMN_TYPES: [ColumnType; 8] = [
+const COLUMN_TYPES: [ColumnType; 9] = [
     ColumnType::I64,
     ColumnType::U64,
     ColumnType::F64,
@@ -48,6 +50,7 @@ const COLUMN_TYPES: [ColumnType; 8] = [
     ColumnType::Bool,
     ColumnType::IpAddr,
     ColumnType::DateTime,
+    ColumnType::Vector,
 ];
 
 impl ColumnType {
@@ -83,7 +86,8 @@ impl ColumnType {
             | ColumnType::Str
             | ColumnType::Bool
             | ColumnType::IpAddr
-            | ColumnType::DateTime => None,
+            | ColumnType::DateTime
+            | ColumnType::Vector => None,
         }
     }
 }

@@ -189,6 +189,9 @@ impl FastFieldsWriter {
                             .record_str(doc_id, field_name, &token.text);
                     }
                 }
+                ReferenceValueLeaf::Vector(_) => {
+                    unimplemented!("Vector support in fast fields is not yet implemented")
+                }
             },
             ReferenceValue::Array(val) => {
                 // TODO: Check this is the correct behaviour we want.
@@ -266,7 +269,7 @@ fn record_json_value_to_columnar_writer<'a, V: Value<'a>>(
 
     match json_val.as_value() {
         ReferenceValue::Leaf(leaf) => match leaf {
-            ReferenceValueLeaf::Null => {} // TODO: Handle null
+            ReferenceValueLeaf::Null => {}
             ReferenceValueLeaf::Str(val) => {
                 if let Some(text_analyzer) = tokenizer.as_mut() {
                     let mut token_stream = text_analyzer.token_stream(val);
@@ -319,6 +322,9 @@ fn record_json_value_to_columnar_writer<'a, V: Value<'a>>(
                 unimplemented!(
                     "Pre-tokenized string support in dynamic fields is not yet implemented"
                 )
+            }
+            ReferenceValueLeaf::Vector(_) => {
+                unimplemented!("Vector support in dynamic fields is not yet implemented")
             }
         },
         ReferenceValue::Array(elements) => {

@@ -282,6 +282,7 @@ impl DynamicColumnHandle {
                     crate::column::open_column_u64::<u64>(column_bytes, self.format_version)?;
                 Ok(Some(column))
             }
+            ColumnType::Vector => todo!(),
         }
     }
 
@@ -313,6 +314,7 @@ impl DynamicColumnHandle {
                 crate::column::open_column_u64::<DateTime>(column_bytes, self.format_version)?
                     .into()
             }
+            ColumnType::Vector => todo!(),
         };
         Ok(dynamic_column)
     }

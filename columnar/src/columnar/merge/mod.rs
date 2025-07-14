@@ -38,6 +38,7 @@ pub(crate) enum ColumnTypeCategory {
     Bool,
     IpAddr,
     DateTime,
+    Vector,
 }
 
 impl From<ColumnType> for ColumnTypeCategory {
@@ -51,6 +52,7 @@ impl From<ColumnType> for ColumnTypeCategory {
             ColumnType::Bool => ColumnTypeCategory::Bool,
             ColumnType::IpAddr => ColumnTypeCategory::IpAddr,
             ColumnType::DateTime => ColumnTypeCategory::DateTime,
+            ColumnType::Vector => ColumnTypeCategory::Vector,
         }
     }
 }
@@ -220,6 +222,7 @@ fn merge_column(
                 crate::column_index::merge_column_index(&column_indexes[..], merge_row_order);
             merge_bytes_or_str_column(merged_column_index, &bytes_columns, merge_row_order, wrt)?;
         }
+        ColumnType::Vector => todo!(),
     }
     Ok(())
 }

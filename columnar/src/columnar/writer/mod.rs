@@ -145,6 +145,7 @@ impl ColumnarWriter {
                 column_name.as_bytes(),
                 |column_opt: Option<ColumnWriter>| column_opt.unwrap_or_default(),
             ),
+            ColumnType::Vector => todo!(),
         }
     }
 
@@ -382,6 +383,7 @@ impl ColumnarWriter {
                     )?;
                     column_serializer.finalize()?;
                 }
+                ColumnType::Vector => todo!(),
             };
         }
         serializer.finalize(num_docs)?;

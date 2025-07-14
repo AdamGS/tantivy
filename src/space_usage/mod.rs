@@ -70,6 +70,7 @@ pub struct SegmentSpaceUsage {
     positions: PerFieldSpaceUsage,
     fast_fields: PerFieldSpaceUsage,
     fieldnorms: PerFieldSpaceUsage,
+    vectors: PerFieldSpaceUsage,
 
     store: StoreSpaceUsage,
 
@@ -87,6 +88,7 @@ impl SegmentSpaceUsage {
         positions: PerFieldSpaceUsage,
         fast_fields: PerFieldSpaceUsage,
         fieldnorms: PerFieldSpaceUsage,
+        vectors: PerFieldSpaceUsage,
         store: StoreSpaceUsage,
         deletes: ByteCount,
     ) -> SegmentSpaceUsage {
@@ -104,6 +106,7 @@ impl SegmentSpaceUsage {
             positions,
             fast_fields,
             fieldnorms,
+            vectors,
             store,
             deletes,
             total,
@@ -125,6 +128,7 @@ impl SegmentSpaceUsage {
             Terms => PerField(self.termdict().clone()),
             SegmentComponent::Store => ComponentSpaceUsage::Store(self.store().clone()),
             Delete => Basic(self.deletes()),
+            Vectors => PerField(self.vectors().clone()),
         }
     }
 
@@ -141,6 +145,11 @@ impl SegmentSpaceUsage {
     /// Space usage for postings list
     pub fn postings(&self) -> &PerFieldSpaceUsage {
         &self.postings
+    }
+
+    /// Space usage for compressed vectors
+    pub fn vectors(&self) -> &PerFieldSpaceUsage {
+        &self.vectors
     }
 
     /// Space usage for positions

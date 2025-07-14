@@ -17,6 +17,7 @@ use crate::postings::{
 use crate::schema::document::{Document, Value};
 use crate::schema::{FieldEntry, FieldType, Schema, DATE_TIME_PRECISION_INDEXED};
 use crate::tokenizer::{FacetTokenizer, PreTokenizedStream, TextAnalyzer, Tokenizer};
+use crate::vector_index::PerFieldVectorWriter;
 use crate::{DocId, Opstamp, TantivyError};
 
 /// Computes the initial size of the hash table.
@@ -49,6 +50,7 @@ pub struct SegmentWriter {
     pub(crate) max_doc: DocId,
     pub(crate) ctx: IndexingContext,
     pub(crate) per_field_postings_writers: PerFieldPostingsWriter,
+    pub(crate) per_field_vectors_writers: PerFieldVectorWriter,
     pub(crate) segment_serializer: SegmentSerializer,
     pub(crate) fast_field_writers: FastFieldsWriter,
     pub(crate) fieldnorms_writer: FieldNormsWriter,
@@ -77,6 +79,7 @@ impl SegmentWriter {
         let table_size = compute_initial_table_size(memory_budget_in_bytes)?;
         let segment_serializer = SegmentSerializer::for_segment(segment)?;
         let per_field_postings_writers = PerFieldPostingsWriter::for_schema(&schema);
+        let per_field_vectors_writers = PerFieldVectorWriter::for_schema(&schema);
         let per_field_text_analyzers = schema
             .fields()
             .map(|(_, field_entry): (_, &FieldEntry)| {
@@ -103,6 +106,7 @@ impl SegmentWriter {
             max_doc: 0,
             ctx: IndexingContext::new(table_size),
             per_field_postings_writers,
+            per_field_vectors_writers,
             fieldnorms_writer: FieldNormsWriter::for_schema(&schema),
             json_path_writer: JsonPathWriter::default(),
             json_positions_per_path: IndexingPositionsPerPath::default(),
@@ -334,6 +338,24 @@ impl SegmentWriter {
                         term_buffer.set_ip_addr(ip_addr);
                         postings_writer.subscribe(doc_id, 0u32, term_buffer, ctx);
                     }
+                    if field_entry.has_fieldnorms() {
+                        self.fieldnorms_writer.record(doc_id, field, num_vals);
+                    }
+                }
+                FieldType::Vector(vector_options) => {
+                    let mut num_vals = 0;
+                    for value in values {
+                        let value = value.as_value();
+                        num_vals += 1;
+                        let vector = value.as_vector().ok_or_else(make_schema_error)?;
+                        // TODO here:
+                        // 1. Verify length with options
+                        // 2. Make sure the SegmentWriter has the right things it needs,
+                        //    VectorWriter or something?
+                        term_buffer.set_vector(vector);
+                        postings_writer.subscribe(doc_id, 0u32, term_buffer, ctx);
+                    }
+
                     if field_entry.has_fieldnorms() {
                         self.fieldnorms_writer.record(doc_id, field, num_vals);
                     }

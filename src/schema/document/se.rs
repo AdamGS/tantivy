@@ -133,6 +133,9 @@ where W: Write
                     self.write_type_code(type_codes::EXT_CODE)?;
                     self.serialize_with_type_code(type_codes::TOK_STR_EXT_CODE, &*val)
                 }
+                ReferenceValueLeaf::Vector(val) => {
+                    self.serialize_with_type_code(type_codes::VECTOR_CODE, &Cow::Borrowed(val))
+                }
             },
             ReferenceValue::Array(elements) => {
                 self.write_type_code(type_codes::ARRAY_CODE)?;

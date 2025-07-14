@@ -287,6 +287,26 @@ impl<'a> BinarySerializable for Cow<'a, [u8]> {
     }
 }
 
+impl<'a> BinarySerializable for Cow<'a, [f32]> {
+    fn serialize<W: Write + ?Sized>(&self, writer: &mut W) -> io::Result<()> {
+        BinarySerializable::serialize(&VInt(self.len() as u64), writer)?;
+        for it in self.iter() {
+            BinarySerializable::serialize(it, writer)?;
+        }
+        Ok(())
+    }
+
+    fn deserialize<R: Read>(reader: &mut R) -> io::Result<Cow<'a, [f32]>> {
+        let num_items = <VInt as BinarySerializable>::deserialize(reader)?.val();
+        let mut items: Vec<f32> = Vec::with_capacity(num_items as usize);
+        for _ in 0..num_items {
+            let item = <f32 as BinarySerializable>::deserialize(reader)?;
+            items.push(item);
+        }
+        Ok(Cow::Owned(items))
+    }
+}
+
 #[cfg(test)]
 pub mod test {
 

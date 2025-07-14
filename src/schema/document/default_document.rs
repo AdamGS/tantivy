@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{self, Read, Write};
 use std::net::Ipv6Addr;
@@ -115,6 +116,11 @@ impl CompactDoc {
 
     /// Add a bytes field
     pub fn add_bytes(&mut self, field: Field, value: &[u8]) {
+        self.add_leaf_field_value(field, value);
+    }
+
+    /// Add a vector field
+    pub fn add_vector(&mut self, field: Field, value: &[f32]) {
         self.add_leaf_field_value(field, value);
     }
 
@@ -254,6 +260,9 @@ impl CompactDoc {
             }
             ReferenceValueLeaf::IpAddr(num) => write_into(&mut self.node_data, num.to_u128()),
             ReferenceValueLeaf::PreTokStr(pre_tok) => write_into(&mut self.node_data, *pre_tok),
+            ReferenceValueLeaf::Vector(items) => {
+                write_into(&mut self.node_data, Cow::Borrowed(items))
+            }
         };
         ValueAddr { type_id, val_addr }
     }
@@ -312,6 +321,12 @@ impl CompactDoc {
         let data = self.extract_bytes(addr);
         // Utf-8 checks would have a noticeable performance overhead here
         unsafe { std::str::from_utf8_unchecked(data) }
+    }
+
+    fn extract_vector(&self, addr: Addr) -> &[f32] {
+        let data = self.extract_bytes(addr);
+        assert_eq!(data.len() % size_of::<f32>(), 0);
+        unsafe { std::mem::transmute(data) }
     }
 
     /// deserialized owned value from node_data
@@ -472,6 +487,9 @@ impl<'a> CompactDocValue<'a> {
                 self.container,
                 addr,
             )?)),
+            ValueType::Vector => Ok(ReferenceValue::Leaf(ReferenceValueLeaf::Vector(
+                self.container.extract_vector(addr),
+            ))),
         }
     }
 }
@@ -542,6 +560,8 @@ pub enum ValueType {
     Object = 11,
     /// Pre-tokenized str type,
     Array = 12,
+    /// Vector
+    Vector = 13,
 }
 
 impl BinarySerializable for ValueType {
@@ -587,6 +607,7 @@ impl<'a> From<&ReferenceValueLeaf<'a>> for ValueType {
             ReferenceValueLeaf::PreTokStr(_) => ValueType::PreTokStr,
             ReferenceValueLeaf::Facet(_) => ValueType::Facet,
             ReferenceValueLeaf::Bytes(_) => ValueType::Bytes,
+            ReferenceValueLeaf::Vector(_) => ValueType::Vector,
         }
     }
 }

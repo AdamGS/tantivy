@@ -136,6 +136,8 @@ pub enum ReferenceValueLeaf<'a> {
     Bool(bool),
     /// Pre-tokenized str type,
     PreTokStr(Box<PreTokenizedString>),
+    /// Vector
+    Vector(&'a [f32]),
 }
 
 impl From<u64> for ReferenceValueLeaf<'_> {
@@ -201,6 +203,12 @@ impl From<PreTokenizedString> for ReferenceValueLeaf<'_> {
     }
 }
 
+impl<'a> From<&'a [f32]> for ReferenceValueLeaf<'a> {
+    fn from(value: &'a [f32]) -> Self {
+        Self::Vector(value)
+    }
+}
+
 impl<'a, T: Value<'a> + ?Sized> From<ReferenceValueLeaf<'a>> for ReferenceValue<'a, T> {
     #[inline]
     fn from(value: ReferenceValueLeaf<'a>) -> Self {
@@ -219,6 +227,9 @@ impl<'a, T: Value<'a> + ?Sized> From<ReferenceValueLeaf<'a>> for ReferenceValue<
             ReferenceValueLeaf::Bool(val) => ReferenceValue::Leaf(ReferenceValueLeaf::Bool(val)),
             ReferenceValueLeaf::PreTokStr(val) => {
                 ReferenceValue::Leaf(ReferenceValueLeaf::PreTokStr(val))
+            }
+            ReferenceValueLeaf::Vector(items) => {
+                ReferenceValue::Leaf(ReferenceValueLeaf::Vector(items))
             }
         }
     }
@@ -331,6 +342,15 @@ impl<'a> ReferenceValueLeaf<'a> {
             None
         }
     }
+
+    #[inline]
+    pub fn as_vector(&self) -> Option<&'a [f32]> {
+        if let Self::Vector(val) = self {
+            Some(val)
+        } else {
+            None
+        }
+    }
 }
 
 /// A enum representing a value for tantivy to index.
@@ -435,6 +455,11 @@ where V: Value<'a>
     /// If the Value is a facet, returns the associated facet. Returns None otherwise.
     pub fn as_facet(&self) -> Option<&'a str> {
         self.as_leaf().and_then(|leaf| leaf.as_facet())
+    }
+
+    /// If the Value is a vector, returns the associated vector. Returns None otherwise.
+    pub fn as_vector(&self) -> Option<&'a [f32]> {
+        self.as_leaf().and_then(|leaf| leaf.as_vector())
     }
 
     #[inline]

@@ -238,6 +238,13 @@ impl Term {
         self.serialized_value_bytes.extend(bytes);
     }
 
+    /// Sets the value of a `Vector` field.
+    pub fn set_vector(&mut self, vector: &[f32]) {
+        self.truncate_value_bytes(0);
+        let data = unsafe { std::mem::transmute(vector) };
+        self.0.extend_from_slice(data);
+    }
+
     /// Truncates the value bytes of the term. Value and field type stays the same.
     pub fn truncate_value_bytes(&mut self, len: usize) {
         self.serialized_value_bytes
@@ -491,7 +498,6 @@ where B: AsRef<[u8]>
             Type::Bool => {
                 write_opt(f, self.as_bool())?;
             }
-            // TODO pretty print these types too.
             Type::Date => {
                 write_opt(f, self.as_date())?;
             }
@@ -514,6 +520,7 @@ where B: AsRef<[u8]>
             Type::IpAddr => {
                 write_opt(f, self.as_ip_addr())?;
             }
+            Type::Vector => todo!(),
         }
         Ok(())
     }
